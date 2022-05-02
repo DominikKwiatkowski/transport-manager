@@ -1,0 +1,10 @@
+version: '3.4'
+
+services:
+ transportdb:
+    image: mongo
+ transportmanager:
+    image: ${DOCKER_REGISTRY-}transportmanager
+    build:
+      context: .
+      dockerfile: TransportManager/Dockerfile

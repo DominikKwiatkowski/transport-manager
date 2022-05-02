@@ -1,0 +1,24 @@
+version: '3.4'
+
+services:
+    transportdb:
+        container_name: transportdb
+        restart: always
+        volumes: 
+          - ${WEBAPP_STORAGE_HOME}/site:/data/db
+        ports:
+          - "27017:27017"
+    transportmanager:
+        container_name: transportmanager
+        environment:
+          - ASPNETCORE_ENVIRONMENT=Development
+          - ASPNETCORE_URLS=https://+:443;http://+:80
+          - "TransportDbSettings:ConnectionString=mongodb://transportdb:27017"
+        depends_on:
+          - transportdb
+        ports:
+          - "80"
+          - "443"
+        volumes:
+          - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+          - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
