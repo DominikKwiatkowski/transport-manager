@@ -30,16 +30,22 @@ namespace TransportManager.Controllers
             return transports;
         }
 
-        [HttpGet("{date},{availableSeats},{types}", Name = "GetAllFilter")]
-        public IEnumerable<TransportDataModel> GetAllFilter(DateTime date, int availableSeats, TransportType[] types)
+        [HttpGet(Name = "GetAllFilter")]
+        public IEnumerable<TransportDataModel> GetAllFilter([FromQuery] Filter userFilter)
         {
             _logger.LogInformation(
                 $"[{DateTime.Now.ToLongDateString()} {DateTime.Now.ToLongTimeString()}][GetAllFilter]GetAllFilter called");
             FilterDefinitionBuilder<TransportDataModel> builder = Builders<TransportDataModel>.Filter;
-            var filter = builder.Eq(x => x.Date.Date, date.Date) & 
-                         builder.Gte(x => x.AvailableSeats, availableSeats);
-            if(types.Length > 0 && types.Length + 1 < Enum.GetNames(typeof(TransportType)).Length)
-                filter &= builder.Where(x => types.Contains(x.Type));
+            // Date comparison does not work on Date part.
+            var beginDate = userFilter.date.Date;
+            var endDate = userFilter.date.AddDays(1);
+            var filter = builder.Gte(x => x.Date, beginDate) &
+                         builder.Lt(x => x.Date, endDate) &
+                         builder.Gte(x => x.AvailableSeats, userFilter.availableSeats) &
+                         builder.Eq(x => x.From, userFilter.from) &
+                         builder.Eq(x => x.To, userFilter.to);
+            if (userFilter.types.Length > 0 && userFilter.types.Length + 1 < Enum.GetNames(typeof(TransportType)).Length)
+                filter &= builder.Where(x => userFilter.types.Contains(x.Type));
 
             var transports = _transportService.GetAllWithFilter(filter);
             _logger.LogInformation(
@@ -108,6 +114,15 @@ namespace TransportManager.Controllers
         {
             public int Id { get; set; }
             public int NumberOfPersons { get; set; }
+        }
+
+        public class Filter
+        {
+            public DateTime date { get; set; }
+            public int availableSeats { get; set; }
+            public string from { get; set; }
+            public string to { get; set; }
+            public TransportType[] types { get; set; }
         }
     }
 }
